@@ -1,46 +1,51 @@
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session
 
 app = Flask(__name__)
-app.secret_key = "secret123"  # required for session
+app.secret_key = "supersecretkey"  # Required for session handling
+app.config['TESTING'] = True  # Needed for test client
 
-USERNAME = "admin"
-PASSWORD = "123"
-
-# Store feedback
-posts = []
-
-@app.route("/")
-def home():
-    return redirect("/login")
-
+# ---------------------------
+# Login Page
+# ---------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        if username == USERNAME and password == PASSWORD:
-            session["logged_in"] = True
+        username = request.form.get("username")
+        password = request.form.get("password")
+        # For simplicity, accept any username/password
+        if username and password:
+            session['logged_in'] = True
             return redirect("/feed")
         else:
-            return "Invalid login!"
+            return render_template("login.html", error="Enter username and password")
     return render_template("login.html")
 
+
+# ---------------------------
+# Feed Page
+# ---------------------------
 @app.route("/feed", methods=["GET", "POST"])
 def feed():
     if not session.get("logged_in"):
         return redirect("/login")
-    if request.method == "POST":
-        username = request.form["username"]
-        item = request.form["item"]
-        feedback = request.form["feedback"]
-        rating = request.form["rating"]
-        posts.append({"username": username, "item": item, "feedback": feedback, "rating": rating})
-    return render_template("feed.html", posts=posts)
 
-@app.route("/logout", methods=["POST"])
+    if request.method == "POST":
+        feedback = request.form.get("feedback")
+        # Here, you can save feedback to file/db (optional)
+        return render_template("feed.html", message="Feedback submitted!")
+
+    return render_template("feed.html")
+
+
+# ---------------------------
+# Logout (optional)
+# ---------------------------
+@app.route("/logout")
 def logout():
-    session["logged_in"] = False
+    session.pop("logged_in", None)
     return redirect("/login")
 
+
+# ---------------------------
 if __name__ == "__main__":
     app.run(debug=True)
